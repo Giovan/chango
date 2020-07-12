@@ -1,0 +1,73 @@
+language: go
+
+go:
+  - "1.12.x"
+  - "1.13.x"
+  - "1.14.x"
+  - "tip"
+
+os:
+  - osx
+  - linux
+  - windows
+
+sudo: false
+
+branches:
+  only:
+    - master
+    - develop
+
+env:
+  # Setting environments variables
+  - GO111MODULE=on
+
+install:
+  - export PATH=$PATH:$HOME/gopath/bin
+  - export REVEL_BRANCH="develop"
+  - 'if [[ "$TRAVIS_BRANCH" == "master" ]]; then export REVEL_BRANCH="master"; fi'
+  - 'echo "Travis branch: $TRAVIS_BRANCH, Revel dependency branch: $REVEL_BRANCH"'
+  # Since travis already checks out go build the commandline tool (revel)
+  - mkdir $HOME/GOPATH_PROTECTED
+  - export GOPATH=$HOME/GOPATH_PROTECTED
+  - go build -o $HOME/gopath/bin/revel github.com/revel/cmd/revel
+  - pwd
+  - env
+script:
+  - go test -v github.com/revel/cmd/revel/...
+
+  # Ensure the new-app flow works (plus the other commands).
+  #- revel version
+  #- revel new     my/testapp
+  #- revel test    my/testapp
+  #- revel clean   my/testapp
+  #- revel build   my/testapp build/testapp
+  #- revel build   my/testapp build/testapp prod
+  #- revel package my/testapp
+  #- revel package my/testapp prod
+
+  # Ensure the new-app flow works (plus the other commands).
+  - revel new     --gomod-flags "edit -replace=github.com/revel/revel=github.com/revel/revel@$REVEL_BRANCH" -a my/testapp2 --package revelframework.com -v
+  - revel test    --gomod-flags "edit -replace=github.com/revel/revel=github.com/revel/revel@$REVEL_BRANCH" -a my/testapp2 -v
+  - revel clean   --gomod-flags "edit -replace=github.com/revel/revel=github.com/revel/revel@$REVEL_BRANCH" -a my/testapp2 -v
+  - revel build   --gomod-flags "edit -replace=github.com/revel/revel=github.com/revel/revel@$REVEL_BRANCH" -a my/testapp2 -v -t build/testapp2
+  - revel build   --gomod-flags "edit -replace=github.com/revel/revel=github.com/revel/revel@$REVEL_BRANCH" -a my/testapp2 -v -t build/testapp2 -m prod
+  - revel package --gomod-flags "edit -replace=github.com/revel/revel=github.com/revel/revel@$REVEL_BRANCH" -a my/testapp2 -v
+  - revel package --gomod-flags "edit -replace=github.com/revel/revel=github.com/revel/revel@$REVEL_BRANCH" -a my/testapp2 -v -m prod
+
+  - export INITIALWD=$PWD
+  # Check build works with no-vendor flag
+  - cd $GOPATH
+  - export GO111MODULE=auto
+  - revel new  -a my/testapp2 --no-vendor -v
+  - revel test -a my/testapp2 -v
+
+  # Check non verbose build, outside of GO path
+  - cd $INITIALWD
+  - revel new     --gomod-flags "edit -replace=github.com/revel/revel=github.com/revel/revel@$REVEL_BRANCH" -a my/testapp3 --package revelframework.com
+  - revel test    --gomod-flags "edit -replace=github.com/revel/revel=github.com/revel/revel@$REVEL_BRANCH" -a my/testapp3
+
+matrix:
+  allow_failures:
+    - go: tip
+    - os: windows
