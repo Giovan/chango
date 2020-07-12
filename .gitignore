@@ -55,3 +55,11 @@ gingorm
 
 # env variables
 .env
+
+tmp/
+test-results/
+
+# editor
+*.swp
+
+*.iml
