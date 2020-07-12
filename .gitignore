@@ -52,3 +52,6 @@ _testmain.go
 *.prof
 
 gingorm
+
+# env variables
+.env
